@@ -1,5 +1,6 @@
-import axios from '~/api/axios';
+import explorer from '~/api/explorer';
 import {padZero} from '~/assets/utils';
+import {REWARD_CHART_TYPES} from '~/assets/variables';
 
 
 /**
@@ -18,12 +19,12 @@ import {padZero} from '~/assets/utils';
  * @return {Promise<Status>}
  */
 export function getStatus() {
-    return axios.get('status')
-        .then((response) => response.data)
+    return explorer.get('status')
+        .then((response) => response.data);
 }
 
 export function getTxChartData() {
-    return axios.get('txCountChartData')
+    return explorer.get('txCountChartData')
         .then((response) => {
             let chartData = response.data.data;
             if (!Array.isArray(chartData)) {
@@ -46,7 +47,7 @@ export function getTxChartData() {
                     daysToAdd[i] = {
                         date: iterationDate.getUTCFullYear() + '-' + padZero(iterationDate.getUTCMonth() + 1) + '-' + padZero(iterationDate.getUTCDate()),
                         txCount: 0,
-                    }
+                    };
                 }
                 lastData = daysToAdd.concat(lastData);
             }
@@ -73,12 +74,10 @@ export function getTxChartData() {
  * @return {Promise<BlockListInfo>}
  */
 export function getBlockList(params) {
-    return axios.get('blocks', {
+    return explorer.get('blocks', {
             params,
         })
-        .then((response) => {
-            return response.data;
-        });
+        .then((response) => response.data);
 }
 
 /**
@@ -93,7 +92,7 @@ export function getBlockList(params) {
  * @return {Promise<Block>}
  */
 export function getBlock(height) {
-    return axios.get('block/' + height)
+    return explorer.get('block/' + height)
         .then((response) => response.data.data);
 }
 
@@ -111,72 +110,97 @@ export function getBlock(height) {
  * @return {Promise<TransactionListInfo>}
  */
 export function getTransactionList(params) {
-    return axios.get('transactions', {
-            params,
-        })
-        .then((response) => {
-            return {
-                ...response.data,
-                data: response.data.data.map((tx) => {
-                    if (tx.data.coin) {
-                        tx.data.coin = tx.data.coin.toUpperCase();
-                    }
-                    return tx;
-                }),
-            }
-        });
+    return explorer.get('transactions', {params})
+        .then((response) => response.data);
 }
 
 /**
- * @typedef {Object} TransactionInfo
- * @property {Transaction} data
- * @property {Object} meta
- * @property {string} meta.prevTxHash
- * @property {string} meta.nextTxHash
+ * @typedef {Object} RewardListInfo
+ * @property {Array<Reward>} data
+ * @property {Object} meta - pagination
  */
+
+/**
+ * @param {Object} [params]
+ * @param {number} [params.address]
+ * @param {number} [params.page]
+ * @return {Promise<RewardListInfo>}
+ */
+export function getRewardList(params) {
+    return explorer.get('events/rewards', {params})
+        .then((response) => response.data);
+}
+
+/**
+ * @typedef {Object} SlashListInfo
+ * @property {Array<Slash>} data
+ * @property {Object} meta - pagination
+ */
+
+/**
+ * @param {Object} [params]
+ * @param {number} [params.address]
+ * @param {number} [params.page]
+ * @return {Promise<SlashListInfo>}
+ */
+export function getSlashList(params) {
+    return explorer.get('events/slashes', {params})
+        .then((response) => response.data);
+}
+
+/**
+ * @param {string} address
+ * @param {string} type
+ * @return {Promise<Array>}
+ */
+export function getRewardChartData(address, type = REWARD_CHART_TYPES.MONTH) {
+    let params;
+    if (type === REWARD_CHART_TYPES.MONTH) {
+        params = {scale: 'day'};
+    } else if (type === REWARD_CHART_TYPES.WEEK) {
+        params = {
+            scale: 'day',
+            startTime: (new Date(Date.now() - 6 * 24 * 60 * 60 *  1000)).toISOString(),
+        };
+    } else {
+        params = {
+            scale: 'hour',
+            startTime: (new Date(Date.now() - 23 * 60 * 60 * 1000)).toISOString(),
+        };
+    }
+    return explorer.get('events/rewards/chart/' + address, {params})
+        .then((response) => {
+            let chartData = response.data.data;
+            if (!Array.isArray(chartData)) {
+                throw new Error('Not valid response from api');
+            }
+
+            // format data for line chart.js
+            return chartData.reduce((accum, item) => {
+                accum.data.push(item.amount);
+                accum.labels.push(item.time.replace(' ', 'T') + ':00');
+                return accum;
+            }, {data: [], labels: []});
+        });
+}
 
 /**
  * @param {string} hash
- * @return {Promise<TransactionInfo>}
+ * @return {Promise<Transaction>}
  */
 export function getTransaction(hash) {
-    return axios.get('transaction/' + hash)
-        .then((response) => {
-            if (!response.data.data || !response.data.data.hash) {
-                throw new Error('Not valid response from api');
-            }
-            let tx = response.data.data;
-            if (tx.data.coin) {
-                tx.data.coin = tx.data.coin.toUpperCase();
-            }
-            return {
-                ...response.data,
-                data: tx,
-            }
-        });
+    return explorer.get('transaction/' + hash)
+        .then((response) => response.data.data);
 }
 
 export function getAddress(address) {
-    return axios.get('address/' + address)
-        .then((response) => {
-            const addressData = response.data.data;
-            // @TODO add to explorer api or make correct string sum
-            // addressData.bipTotal = 0;
-            // addressData.usdTotal = 0;
-            // if (addressData.coins) {
-            //     addressData.coins.forEach((coin) => {
-            //         addressData.bipTotal += coin.baseCoinAmount;
-            //         addressData.usdTotal += coin.usdAmount;
-            //     })
-            // }
-            return addressData;
-        });
+    return explorer.get('address/' + address)
+        .then((response) => response.data.data);
 }
 
 export function getWebSocketConnectData() {
-    return axios.get('settings/get-ws-data').then((response) => ({
-        ...response.data.data
-    }));
+    return explorer.get('settings/get-ws-data')
+        .then((response) => response.data.data);
 }
 
 /**
@@ -207,11 +231,11 @@ export function getWebSocketConnectData() {
  * @property {string} status
  * @property {number} nonce
  * @property {number} block
+ * @property {string} from
  * @property {string} timestamp
  * @property {number} fee
  * @property {number} type
  * @property {Object} data
- * @property {string} data.from
  * -- type: TX_TYPES.SEND
  * @property {string} [data.to]
  * @property {string} [data.coin]
@@ -247,3 +271,25 @@ export function getWebSocketConnectData() {
  * - type: TX_TYPES.SET_CANDIDATE_ONLINE, TX_TYPES.SET_CANDIDATE_OFFLINE
  * @property {string} [data.pub_key]
  */
+
+
+/**
+ * @typedef {Object} Reward
+ * @property {number} block
+ * @property {string} timestamp
+ * @property {string} role
+ * @property {string} address
+ * @property {string} validator
+ * @property {number} amount
+ */
+
+/**
+ * @typedef {Object} Slash
+ * @property {number} block
+ * @property {string} timestamp
+ * @property {string} address
+ * @property {string} validator
+ * @property {number} amount
+ * @property {string} coin
+ */
+

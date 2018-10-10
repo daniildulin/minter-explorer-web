@@ -15,20 +15,25 @@
         },
         asyncData({ params, error }) {
             return getTransaction(params.hash)
-                .then((txInfo) => {
+                .then((tx) => {
                     return {
                         tx: {
-                            ...txInfo.data,
-                            timeDistance: getTimeDistance(txInfo.data.timestamp),
-                            timeUTC: getTimeUTC(txInfo.data.timestamp),
-                        },
-                        navigation: {
-                            ...txInfo.meta,
+                            ...tx,
+                            timeDistance: getTimeDistance(tx.timestamp),
+                            timeUTC: getTimeUTC(tx.timestamp),
                         },
                     };
                 })
                 .catch((e) => {
-                    error({ statusCode: 404, message: 'Transaction not found' });
+                    if (e.response && e.response.status === 404) {
+                        // do nothing, wait for tx to appear in the blockchain
+                    } else {
+                        error({
+                            statusCode: e.response && e.response.status || e.request.status,
+                            message: e.response && (e.response.data.error || e.response.statusText) || e.request.statusText,
+                        });
+                    }
+
                 });
         },
         head() {
@@ -39,19 +44,35 @@
                 meta: [
                     { hid: 'og-title', name: 'og:title', content: title },
                 ],
-            }
+            };
         },
         data() {
             return {
-                /** @type Transaction */
-                tx: {},
-                navigation: {
-                    prevTxHash: null,
-                    nextTxHash: null,
-                },
+                /** @type Transaction|null */
+                tx: null,
+            };
+        },
+        mounted() {
+            if (!this.tx) {
+                this.fetchTx();
             }
         },
         methods: {
+            fetchTx() {
+                getTransaction(this.$route.params.hash)
+                    .then((tx) => {
+                        this.tx = {
+                            ...tx,
+                            timeDistance: getTimeDistance(tx.timestamp),
+                            timeUTC: getTimeUTC(tx.timestamp),
+                        };
+                    })
+                    .catch((e) => {
+                        setTimeout(() => {
+                            this.fetchTx();
+                        }, 2500);
+                    });
+            },
             isDefined(value) {
                 return typeof value !== 'undefined';
             },
@@ -61,13 +82,13 @@
             isBuy(tx) {
                 return tx.type === TX_TYPES.BUY_COIN;
             },
-        }
-    }
+        },
+    };
 </script>
 
 <template>
     <div>
-        <section class="panel u-section">
+        <section class="panel u-section" v-if="tx">
             <div class="panel__section panel__header">
                 <h1 class="panel__header-title panel__title">
                     <BackButton/>
@@ -91,7 +112,7 @@
                 <dd>{{ tx.type | txType }}</dd>
 
                 <dt>From</dt>
-                <dd><nuxt-link class="link--default" :to="'/address/' + tx.data.from">{{ tx.data.from }}</nuxt-link></dd>
+                <dd><nuxt-link class="link--default" :to="'/address/' + tx.from">{{ tx.from }}</nuxt-link></dd>
 
                 <!-- SEND -->
                 <dt v-if="tx.data.to">To</dt>
@@ -146,12 +167,11 @@
                 <dd :class="{'u-text-muted': !tx.payload }">{{ tx.payload ? tx.payload : 'Blank' }}</dd>
             </dl>
         </section>
-        <!--
-        // no navigation data from explorer
-        <div class="u-section navigation">
-            <nuxt-link class="button button&#45;&#45;ghost-main" :class="{'u-visually-hidden': !navigation.prevTxHash}" :to="'/transactions/' + navigation.prevTxHash">Prev Tx</nuxt-link>
-            <nuxt-link class="button button&#45;&#45;ghost-main" :class="{'u-visually-hidden': !navigation.prevTxHash}" :to="'/transactions/' + navigation.nextTxHash">Next Tx</nuxt-link>
-        </div>
-        -->
+        <h1 class="u-text-center" style="margin-top: 50px;" v-else>
+            Transaction not found yet <br>
+            <svg class="loader" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"  style="margin-top: 20px;">
+                <circle class="loader__path" cx="14" cy="14" r="12"></circle>
+            </svg>
+        </h1>
     </div>
 </template>

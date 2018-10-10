@@ -31,7 +31,7 @@ module.exports = {
         link: [
             { rel: 'icon', href: '/favicon.png' },
             { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
-        ]
+        ],
     },
     css: [
         './static/css/style.min.css',
@@ -53,6 +53,7 @@ module.exports = {
         { src: '~/plugins/seo-ym.js', ssr: false },
         { src: '~/plugins/seo-fb.js', ssr: false },
         { src: '~/plugins/seo-vk.js', ssr: false },
+        { src: '~/plugins/seo-tw.js', ssr: false },
     ],
     env: Object.assign({}, processEnv, dotEnv),
     /*
@@ -68,25 +69,25 @@ module.exports = {
         /*
         ** Run ESLint on save
         */
-        extend (config, { isDev, isClient, isServer }) {
-            if (isDev && isClient) {
-                config.module.rules.push({
-                    enforce: 'pre',
-                    test: /\.(js|vue)$/,
-                    loader: 'eslint-loader',
-                    exclude: /(node_modules)/
-                })
-            }
+        extend(config, { isDev, isClient, isServer }) {
+            // if (isDev && isClient) {
+            //     config.module.rules.push({
+            //         enforce: 'pre',
+            //         test: /\.(js|vue)$/,
+            //         loader: 'eslint-loader',
+            //         exclude: /(node_modules)/,
+            //     });
+            // }
             /*
             ** process some node_modules through webpack in server build
             */
             if (isServer) {
                 config.externals = [
                     nodeExternals({
-                        whitelist: [/^date-fns\/esm/]
-                    })
-                ]
+                        whitelist: [/^date-fns\/esm/],
+                    }),
+                ];
             }
-        }
+        },
     },
 };

@@ -52,6 +52,7 @@ p, ul, ol {margin: 0;}
 p + p {margin-top: 10px;}
 sub, sup { font-size: 75%;}
 
+:-moz-focusring {outline: none;}
 input, textarea, select {
     font: inherit; color: @c-black; outline: none; caret-color: @c-main;
     &::placeholder {color: #a4a4a4; opacity: 1;}
@@ -135,14 +136,14 @@ dd {overflow-wrap: break-word; margin: 0;}
 
 // button
 .button {
-    display: inline-flex; align-items: center; justify-content: center; padding: 10px 26px; font-size: 16px; line-height: 18px; font-weight: 700; font-family: @heading-font-family; color: @c-black; text-align: center; border: 2px solid transparent; text-decoration: none; transition: 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; padding: 10px 26px; font-size: 16px; line-height: 18px; font-weight: 700; font-family: @heading-font-family; color: @c-black; text-align: center; border: 2px solid transparent; text-decoration: none; transition: 0.15s; position: relative;
     &:hover, &:focus {box-shadow: 0 4px 8px rgba(0,0,0,0.1);}
     &:active {box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
     &[disabled], &.is-disabled {
         cursor: default;
         &:not(.is-loading) {background: shade(#fff, 30%); box-shadow: none;}
     }
-    &.is-loading {color: transparent;}
+    &.is-loading .button__content {color: transparent;}
 }
 .button--main {
     color: #fff; background: @c-main;
@@ -162,6 +163,23 @@ dd {overflow-wrap: break-word; margin: 0;}
 .button--small {padding-left: 14px; padding-right: 14px;}
 @media (min-width: @breakpoint-medium-up) {
     .button--small {padding-left: 26px; padding-right: 26px;}
+}
+
+
+
+// button-loader
+@loader-length: 12 * 3.14 * 2; // длина окружности
+.loader {width: 28px; height: 28px; margin: auto; animation: loader-rotate 2s linear infinite;}
+.loader__path { fill: none; stroke: currentColor; stroke-width: 2px; stroke-linecap: round; animation: loader-dash 1.5s ease-in-out infinite; }
+
+@keyframes loader-rotate {
+    0% {transform: rotate(-90deg);}
+    100% { transform: rotate(270deg); }
+}
+@keyframes loader-dash {
+    0% { stroke-dasharray: 1, 200; stroke-dashoffset: 0; }
+    50% { stroke-dasharray: @loader-length * 0.8, 200; stroke-dashoffset: 0; }
+    100% { stroke-dasharray: @loader-length * 0.8, 200; stroke-dashoffset: -@loader-length + 1px; }
 }
 
 
