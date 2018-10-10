@@ -1,4 +1,5 @@
 <script>
+    import debounce from 'lodash-es/debounce';
     import TableLink from '~/components/TableLink';
 
     export default {
@@ -14,16 +15,34 @@
         },
         data() {
             return {
+                shouldShortenAddress: this.getShouldShortenAddress(),
+                shouldShortenPublicKey: this.getShouldShortenPublicKey(),
+            };
+        },
+        mounted() {
+            if (process.client) {
+                window.addEventListener('resize', debounce(() => {
+                    this.shouldShortenAddress = this.getShouldShortenAddress();
+                    this.shouldShortenPublicKey = this.getShouldShortenPublicKey();
+                }), 100);
             }
         },
-    }
+        methods: {
+            getShouldShortenAddress() {
+                return process.client && window.innerWidth < 450;
+            },
+            getShouldShortenPublicKey() {
+                return process.client && window.innerWidth < 960;
+            },
+        }
+    };
 </script>
 
 <template>
     <section class="panel u-section">
         <div class="panel__section panel__header">
             <h1 class="panel__title panel__header-title">
-                <img class="panel__header-title-icon" src="/img/icon-validator.svg" alt="" role="presentation">
+                <img class="panel__header-title-icon" src="/img/icon-validator.svg" width="40" height="40" alt="" role="presentation">
                 Validators
             </h1>
         </div>
@@ -44,11 +63,16 @@
                     <td>
                         <TableLink :link-text="validator.address"
                                    :link-path="'/address/' + validator.address"
-                                   :should-not-shorten="true"
+                                   :should-not-shorten="!shouldShortenAddress"
                         />
                     </td>
                     <!-- Public Key -->
-                    <td>{{ validator.publicKey }}</td>
+                    <td>
+                        <TableLink :link-text="validator.publicKey"
+                                   :link-path="'/validator/' + validator.publicKey"
+                                   :should-not-shorten="!shouldShortenPublicKey"
+                        />
+                    </td>
                 </tr>
                 </tbody>
             </table>

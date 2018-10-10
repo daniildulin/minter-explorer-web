@@ -5,7 +5,7 @@
                 type: String,
                 default() {
                     return this.$route.path;
-                }
+                },
             },
             paginationInfo: {
                 type: Object,
@@ -13,7 +13,7 @@
                 default: () => ({
                     current_page: null,
                     last_page: null,
-                })
+                }),
             },
             paginationClass: {
                 type: String,
@@ -26,6 +26,9 @@
             buttonDisabledClass: {
                 type: String,
                 default: 'u-visually-hidden',
+            },
+            activeTab: {
+                type: String,
             },
         },
         computed: {
@@ -54,15 +57,19 @@
             getPageHref(page) {
                 let location = {
                     path: this.basePath,
+                    query: {},
                 };
                 if (page && page !== 1) {
-                    location.query = {page};
+                    location.query.page = page;
+                }
+                if (this.activeTab) {
+                    location.query.active_tab = this.activeTab;
                 }
 
                 return location;
-            }
-        }
-    }
+            },
+        },
+    };
 </script>
 
 <template>

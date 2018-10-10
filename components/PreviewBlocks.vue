@@ -14,7 +14,7 @@
         },
         computed: {
             blockListFormatted() {
-                return this.blockList ? this.blockList.slice(0, 15).map((block) => {
+                return this.blockList ? this.blockList.map((block) => {
                     const validator = block.validators[0] || {};
                     return {
                         ...block,
@@ -22,11 +22,11 @@
                         validatorName: validator.name || validator.address,
                         validatorUrl: '/address/' + validator.address,
                         timeDistance: getTimeDistance(block.timestamp),
-                    }
+                    };
                 }) : [];
             },
         },
-    }
+    };
 </script>
 
 <template>
